@@ -16,6 +16,9 @@
 #include <chrono>
 #include <sophus/se3.hpp>
 
+// opencv4
+#include "opencv2/imgcodecs/legacy/constants_c.h"
+
 using namespace std;
 using namespace cv;
 
@@ -110,12 +113,15 @@ int main(int argc, char **argv) {
   vector<Point3f> pts1, pts2;
 
   for (DMatch m:matches) {
+    // 输出
+    // cout << typeid(keypoints_1[m.queryIdx].pt.y).name() << ":" << keypoints_1[m.queryIdx].pt.y << endl;
     ushort d1 = depth1.ptr<unsigned short>(int(keypoints_1[m.queryIdx].pt.y))[int(keypoints_1[m.queryIdx].pt.x)];
     ushort d2 = depth2.ptr<unsigned short>(int(keypoints_2[m.trainIdx].pt.y))[int(keypoints_2[m.trainIdx].pt.x)];
     if (d1 == 0 || d2 == 0)   // bad depth
       continue;
     Point2d p1 = pixel2cam(keypoints_1[m.queryIdx].pt, K);
     Point2d p2 = pixel2cam(keypoints_2[m.trainIdx].pt, K);
+	// 转换为实际尺度
     float dd1 = float(d1) / 5000.0;
     float dd2 = float(d2) / 5000.0;
     pts1.push_back(Point3f(p1.x * dd1, p1.y * dd1, dd1));
@@ -209,6 +215,13 @@ void pose_estimation_3d3d(const vector<Point3f> &pts1,
     p1 += pts1[i];
     p2 += pts2[i];
   }
+  /*cout << "p1:" << p1 << endl;
+  cout << "(vec3f)p1:" << Vec3f(p1) << endl;
+  cout << "p1/N:" << p1/N << endl;
+  cout << "(vec3f)p1/N:" << Vec3f(p1)/N << endl;
+  cout << "(Point3f)((vec3f)p1/N):" << Point3f(Vec3f(p1)/N) << endl;
+  cout << "p1/N:" << p1/N << endl;*/
+  // 和p1/N结果一样
   p1 = Point3f(Vec3f(p1) / N);
   p2 = Point3f(Vec3f(p2) / N);
   vector<Point3f> q1(N), q2(N); // remove the center
@@ -230,9 +243,13 @@ void pose_estimation_3d3d(const vector<Point3f> &pts1,
   Eigen::Matrix3d V = svd.matrixV();
 
   cout << "U=" << U << endl;
+  cout << "U*U^T=" << U*U.transpose() << endl;
   cout << "V=" << V << endl;
+  cout << "V*V^T=" << V*V.transpose() << endl;
 
-  Eigen::Matrix3d R_ = U * (V.transpose());
+  // 理论错误 应该为VU^T
+  // Eigen::Matrix3d R_ = U * (V.transpose());
+  Eigen::Matrix3d R_ = V * (U.transpose());
   if (R_.determinant() < 0) {
     R_ = -R_;
   }
@@ -245,6 +262,15 @@ void pose_estimation_3d3d(const vector<Point3f> &pts1,
     R_(2, 0), R_(2, 1), R_(2, 2)
   );
   t = (Mat_<double>(3, 1) << t_(0, 0), t_(1, 0), t_(2, 0));
+
+  // 计算R的误差
+  double error = 0;
+  for(int i = 0; i < pts1.size(); i++)
+  {
+	  Mat e = (Mat_<double>(3, 1) << pts1[i].x, pts1[i].y, pts1[i].z) - R * (Mat_<double>(3, 1) << pts2[i].x, pts2[i].y, pts2[i].z) + t;
+	  error += norm(e, NORM_L1);
+  }
+  cout << "this R's error is " << error << " ." << endl;
 }
 
 void bundleAdjustment(
@@ -269,11 +295,9 @@ void bundleAdjustment(
 
   // edges
   for (size_t i = 0; i < pts1.size(); i++) {
-    EdgeProjectXYZRGBDPoseOnly *edge = new EdgeProjectXYZRGBDPoseOnly(
-      Eigen::Vector3d(pts2[i].x, pts2[i].y, pts2[i].z));
+    EdgeProjectXYZRGBDPoseOnly *edge = new EdgeProjectXYZRGBDPoseOnly(Eigen::Vector3d(pts2[i].x, pts2[i].y, pts2[i].z));
     edge->setVertex(0, pose);
-    edge->setMeasurement(Eigen::Vector3d(
-      pts1[i].x, pts1[i].y, pts1[i].z));
+    edge->setMeasurement(Eigen::Vector3d(pts1[i].x, pts1[i].y, pts1[i].z));
     edge->setInformation(Eigen::Matrix3d::Identity());
     optimizer.addEdge(edge);
   }
@@ -287,6 +311,8 @@ void bundleAdjustment(
 
   cout << endl << "after optimization:" << endl;
   cout << "T=\n" << pose->estimate().matrix() << endl;
+  cout << "R=\n" << pose->estimate().rotationMatrix() << endl;
+  cout << "t=\n" << pose->estimate().translation() << endl;
 
   // convert to cv::Mat
   Eigen::Matrix3d R_ = pose->estimate().rotationMatrix();

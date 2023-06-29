@@ -217,6 +217,7 @@ void BALProblem::Normalize() {
         for (int j = 0; j < num_points_; ++j) {
             tmp[j] = points[3 * j + i];
         }
+		// 计算point的中位数坐标(x,y,z)
         median(i) = Median(&tmp);
     }
 
@@ -224,7 +225,7 @@ void BALProblem::Normalize() {
         VectorRef point(points + 3 * i, 3);
         tmp[i] = (point - median).lpNorm<1>();
     }
-
+	// 计算误差的中位数
     const double median_absolute_deviation = Median(&tmp);
 
     // Scale so that the median absolute deviation of the resulting

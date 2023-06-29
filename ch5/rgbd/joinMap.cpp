@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 
     ifstream fin("./pose.txt");
     if (!fin) {
-        cerr << "请在有pose.txt的目录下运行此程序" << endl;
+        cerr << "请在有pose.txt的目录下运行此程序" << endl;0
         return 1;
     }
 
@@ -30,8 +30,10 @@ int main(int argc, char **argv) {
         depthImgs.push_back(cv::imread((fmt % "depth" % (i + 1) % "pgm").str(), -1)); // 使用-1读取原始图像
 
         double data[7] = {0};
-        for (auto &d:data)
-            fin >> d;
+	    for (auto &d: data)
+	    {
+		    fin >> d;
+	    }
         Sophus::SE3d pose(Eigen::Quaterniond(data[6], data[3], data[4], data[5]),
                           Eigen::Vector3d(data[0], data[1], data[2]));
         poses.push_back(pose);

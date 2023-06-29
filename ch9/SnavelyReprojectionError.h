@@ -58,6 +58,7 @@ public:
     }
 
     static ceres::CostFunction *Create(const double observed_x, const double observed_y) {
+		// 输入残差维度,x,y维度
         return (new ceres::AutoDiffCostFunction<SnavelyReprojectionError, 2, 9, 3>(
             new SnavelyReprojectionError(observed_x, observed_y)));
     }

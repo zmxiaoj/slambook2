@@ -1,0 +1,41 @@
+
+Solver Summary (v 2.0.0-eigen-(3.3.7)-lapack-suitesparse-(5.7.1)-cxsparse-(3.2.0)-eigensparse-no_openmp)
+
+                                     Original                  Reduced
+Parameter blocks                        22122                    22122
+Parameters                              66462                    66462
+Residual blocks                         83718                    83718
+Residuals                              167436                   167436
+
+Minimizer                        TRUST_REGION
+Trust region strategy     LEVENBERG_MARQUARDT
+
+                                        Given                     Used
+Linear solver                 ITERATIVE_SCHUR          ITERATIVE_SCHUR
+Preconditioner                         JACOBI                   JACOBI
+Threads                                     1                        1
+Linear solver ordering              AUTOMATIC                 22106,16
+Schur structure                         2,3,9                    2,3,9
+
+Cost:
+Initial                          1.842900e+07
+Final                            1.233700e+04
+Change                           1.841667e+07
+
+Minimizer iterations                       51
+Successful steps                           49
+Unsuccessful steps                          2
+
+Time (in seconds):
+Preprocessor                         0.081590
+
+  Residual only evaluation           0.628687 (50)
+  Jacobian & residual evaluation     1.790074 (49)
+  Linear solver                      1.691674 (50)
+Minimizer                            4.434675
+
+Postprocessor                        0.002630
+Total                                4.518900
+
+Termination:                   NO_CONVERGENCE (Maximum number of iterations reached. Number of iterations: 50.)
+

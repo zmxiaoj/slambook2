@@ -5,6 +5,9 @@
 #include <opencv2/calib3d/calib3d.hpp>
 // #include "extra.h" // use this if in OpenCV2
 
+// opencv4
+#include "opencv2/imgcodecs/legacy/constants_c.h"
+
 using namespace std;
 using namespace cv;
 
@@ -62,6 +65,7 @@ int main(int argc, char **argv) {
     Point2d pt2 = pixel2cam(keypoints_2[m.trainIdx].pt, K);
     Mat y2 = (Mat_<double>(3, 1) << pt2.x, pt2.y, 1);
     Mat d = y2.t() * t_x * R * y1;
+	// 结果越接近0越精确
     cout << "epipolar constraint = " << d << endl;
   }
   return 0;
@@ -140,15 +144,21 @@ void pose_estimation_2d2d(std::vector<KeyPoint> keypoints_1,
 
   //-- 计算基础矩阵
   Mat fundamental_matrix;
-  fundamental_matrix = findFundamentalMat(points1, points2, CV_FM_8POINT);
+  // fundamental_matrix = findFundamentalMat(points1, points2, CV_FM_8POINT);
+  // opencv4
+  fundamental_matrix = findFundamentalMat(points1, points2, FM_8POINT);
   cout << "fundamental_matrix is " << endl << fundamental_matrix << endl;
 
   //-- 计算本质矩阵
+  // 光心位置和焦距等价于内参
   Point2d principal_point(325.1, 249.7);  //相机光心, TUM dataset标定值
   double focal_length = 521;      //相机焦距, TUM dataset标定值
   Mat essential_matrix;
   essential_matrix = findEssentialMat(points1, points2, focal_length, principal_point);
   cout << "essential_matrix is " << endl << essential_matrix << endl;
+
+  // Mat F_compute = K.t().inv() * essential_matrix * K.inv();
+  // cout << "F_compute :" << F_compute << endl;
 
   //-- 计算单应矩阵
   //-- 但是本例中场景不是平面，单应矩阵意义不大

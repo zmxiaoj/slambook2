@@ -3,6 +3,10 @@
 #include <boost/format.hpp>
 #include <pangolin/pangolin.h>
 
+// opencv4
+// error: ‘CV_GRAY2BGR’ was not declared in this scope
+#include <opencv2/imgproc/types_c.h>
+
 using namespace std;
 
 typedef vector<Eigen::Vector2d, Eigen::aligned_allocator<Eigen::Vector2d>> VecVector2d;
@@ -134,6 +138,7 @@ int main(int argc, char **argv) {
 
     // generate pixels in ref and load depth data
     for (int i = 0; i < nPoints; i++) {
+		// 在区间(a,b)内取均匀分布的随机数
         int x = rng.uniform(boarder, left_img.cols - boarder);  // don't pick pixels close to boarder
         int y = rng.uniform(boarder, left_img.rows - boarder);  // don't pick pixels close to boarder
         int disparity = disparity_img.at<uchar>(y, x);
@@ -148,7 +153,7 @@ int main(int argc, char **argv) {
     for (int i = 1; i < 6; i++) {  // 1~10
         cv::Mat img = cv::imread((fmt_others % i).str(), 0);
         // try single layer by uncomment this line
-        // DirectPoseEstimationSingleLayer(left_img, img, pixels_ref, depth_ref, T_cur_ref);
+        DirectPoseEstimationSingleLayer(left_img, img, pixels_ref, depth_ref, T_cur_ref);
         DirectPoseEstimationMultiLayer(left_img, img, pixels_ref, depth_ref, T_cur_ref);
     }
     return 0;
@@ -203,10 +208,13 @@ void DirectPoseEstimationSingleLayer(
 
     // plot the projected pixels here
     cv::Mat img2_show;
+	// 因为是灰度图不做转换直接copy会得到黑点
     cv::cvtColor(img2, img2_show, CV_GRAY2BGR);
     VecVector2d projection = jaco_accu.projected_points();
     for (size_t i = 0; i < px_ref.size(); ++i) {
+		// 路标点在图1的像素点
         auto p_ref = px_ref[i];
+		// 路标点在图2的像素点
         auto p_cur = projection[i];
         if (p_cur[0] > 0 && p_cur[1] > 0) {
             cv::circle(img2_show, cv::Point2f(p_cur[0], p_cur[1]), 2, cv::Scalar(0, 250, 0), 2);
@@ -221,6 +229,7 @@ void DirectPoseEstimationSingleLayer(
 void JacobianAccumulator::accumulate_jacobian(const cv::Range &range) {
 
     // parameters
+	// 设置窗口尺寸为3*3
     const int half_patch_size = 1;
     int cnt_good = 0;
     Matrix6d hessian = Matrix6d::Zero();
@@ -230,13 +239,17 @@ void JacobianAccumulator::accumulate_jacobian(const cv::Range &range) {
     for (size_t i = range.start; i < range.end; i++) {
 
         // compute the projection in the second image
+		// point_ref为路标点在第一帧相机坐标系下的坐标
         Eigen::Vector3d point_ref =
             depth_ref[i] * Eigen::Vector3d((px_ref[i][0] - cx) / fx, (px_ref[i][1] - cy) / fy, 1);
-        Eigen::Vector3d point_cur = T21 * point_ref;
+        // point_cur为路标点在第二帧相机坐标系下的坐标
+		Eigen::Vector3d point_cur = T21 * point_ref;
+		// 如果深度值为负，说明是异常点
         if (point_cur[2] < 0)   // depth invalid
             continue;
-
+		// 计算路标点在图2的像素坐标
         float u = fx * point_cur[0] / point_cur[2] + cx, v = fy * point_cur[1] / point_cur[2] + cy;
+		// 剔除边缘的像素点
         if (u < half_patch_size || u > img2.cols - half_patch_size || v < half_patch_size ||
             v > img2.rows - half_patch_size)
             continue;
@@ -269,6 +282,7 @@ void JacobianAccumulator::accumulate_jacobian(const cv::Range &range) {
                 J_pixel_xi(1, 4) = fy * X * Y * Z2_inv;
                 J_pixel_xi(1, 5) = fy * X * Z_inv;
 
+				// 像素梯度使用中值插值获得
                 J_img_pixel = Eigen::Vector2d(
                     0.5 * (GetPixelValue(img2, u + 1 + x, v + y) - GetPixelValue(img2, u - 1 + x, v + y)),
                     0.5 * (GetPixelValue(img2, u + x, v + 1 + y) - GetPixelValue(img2, u + x, v - 1 + y))
@@ -277,6 +291,7 @@ void JacobianAccumulator::accumulate_jacobian(const cv::Range &range) {
                 // total jacobian
                 Vector6d J = -1.0 * (J_img_pixel.transpose() * J_pixel_xi).transpose();
 
+				// 计算整个3*3窗口内点的梯度，像素梯度为各自值，像素对扰动的导数均为中心点的值
                 hessian += J * J.transpose();
                 bias += -error * J;
                 cost_tmp += error * error;

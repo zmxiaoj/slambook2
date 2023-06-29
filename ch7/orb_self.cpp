@@ -6,6 +6,7 @@
 #include <string>
 #include <nmmintrin.h>
 #include <chrono>
+#include <bitset>
 
 using namespace std;
 
@@ -66,6 +67,9 @@ int main(int argc, char **argv) {
   time_used = chrono::duration_cast<chrono::duration<double>>(t2 - t1);
   cout << "match ORB cost = " << time_used.count() << " seconds. " << endl;
   cout << "matches: " << matches.size() << endl;
+  // 输出匹配结果
+  for(auto m : matches)
+	  cout << "queryIdx:" << m.queryIdx << " trainIdx:" << m.trainIdx << " distance:d" << m.distance << endl;
 
   // plot the matches
   cv::Mat image_show;
@@ -341,6 +345,7 @@ int ORB_pattern[256 * 4] = {
 
 // compute the descriptor
 void ComputeORB(const cv::Mat &img, vector<cv::KeyPoint> &keypoints, vector<DescType> &descriptors) {
+  // 排除边缘点的描述子，因为边缘点往往没有匹配，这样做能够减少误匹配
   const int half_patch_size = 8;
   const int half_boundary = 16;
   int bad_points = 0;
@@ -352,7 +357,7 @@ void ComputeORB(const cv::Mat &img, vector<cv::KeyPoint> &keypoints, vector<Desc
       descriptors.push_back({});
       continue;
     }
-
+    // 灰度质心法: 计算灰度质心和方向
     float m01 = 0, m10 = 0;
     for (int dx = -half_patch_size; dx < half_patch_size; ++dx) {
       for (int dy = -half_patch_size; dy < half_patch_size; ++dy) {
@@ -361,13 +366,16 @@ void ComputeORB(const cv::Mat &img, vector<cv::KeyPoint> &keypoints, vector<Desc
         m01 += dy * pixel;
       }
     }
-
     // angle should be arc tan(m01/m10);
+	// 这里回避了直接用sin cos arctan，能够加速求解
     float m_sqrt = sqrt(m01 * m01 + m10 * m10) + 1e-18; // avoid divide by zero
     float sin_theta = m01 / m_sqrt;
     float cos_theta = m10 / m_sqrt;
 
     // compute the angle of this point
+	// 利用方向信息，计算固定方向的描述子，p和q的取法来自预设好的ORB_pattern（伪随机）
+	// 描述子用容量为8的无符号整型数组描述
+	// 初始化vector 容量为8，值为0
     DescType desc(8, 0);
     for (int i = 0; i < 8; i++) {
       uint32_t d = 0;
@@ -383,6 +391,7 @@ void ComputeORB(const cv::Mat &img, vector<cv::KeyPoint> &keypoints, vector<Desc
                          + kp.pt;
         if (img.at<uchar>(pp.y, pp.x) < img.at<uchar>(qq.y, qq.x)) {
           d |= 1 << k;
+		  // cout << bitset<32>(d) << endl;
         }
       }
       desc[i] = d;
@@ -404,8 +413,10 @@ void BfMatch(const vector<DescType> &desc1, const vector<DescType> &desc2, vecto
       if (desc2[i2].empty()) continue;
       int distance = 0;
       for (int k = 0; k < 8; k++) {
+		// 异或，不同位置1，相同位置0，_mm_popcnt_u32()统计bit为1的个数
         distance += _mm_popcnt_u32(desc1[i1][k] ^ desc2[i2][k]);
       }
+	  // distance小于阈值并且小于当前最小距离时会被记录
       if (distance < d_max && distance < m.distance) {
         m.distance = distance;
         m.trainIdx = i2;

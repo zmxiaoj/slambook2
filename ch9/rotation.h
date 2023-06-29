@@ -95,6 +95,8 @@ inline void AngleAxisRotatePoint(const T angle_axis[3], const T pt[3], T result[
     if (theta2 > T(std::numeric_limits<double>::epsilon())) {
         // Away from zero, use the rodriguez formula
         //
+		// // p' = R * pt
+		//
         //   result = pt costheta +
         //            (w x pt) * sintheta +
         //            w (w . pt) (1 - costheta)

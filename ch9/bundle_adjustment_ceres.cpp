@@ -3,6 +3,11 @@
 #include "common.h"
 #include "SnavelyReprojectionError.h"
 
+#include <fstream>
+#include <string>
+#include <chrono>
+#include <iomanip>
+
 using namespace std;
 
 void SolveBA(BALProblem &bal_problem);
@@ -16,9 +21,9 @@ int main(int argc, char **argv) {
     BALProblem bal_problem(argv[1]);
     bal_problem.Normalize();
     bal_problem.Perturb(0.1, 0.5, 0.5);
-    bal_problem.WriteToPLYFile("initial.ply");
+    bal_problem.WriteToPLYFile("initialCeres.ply");
     SolveBA(bal_problem);
-    bal_problem.WriteToPLYFile("final.ply");
+    bal_problem.WriteToPLYFile("finalCeresITERATIVE_SCHUR.ply");
 
     return 0;
 }
@@ -32,6 +37,7 @@ void SolveBA(BALProblem &bal_problem) {
     // Observations is 2 * num_observations long array observations
     // [u_1, u_2, ... u_n], where each u_i is two dimensional, the x
     // and y position of the observation.
+	// 观测的像素坐标(x,y)
     const double *observations = bal_problem.observations();
     ceres::Problem problem;
 
@@ -62,9 +68,25 @@ void SolveBA(BALProblem &bal_problem) {
 
     std::cout << "Solving ceres BA ... " << endl;
     ceres::Solver::Options options;
-    options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR;
+    // options.linear_solver_type = ceres::LinearSolverType::SPARSE_SCHUR;
+	options.linear_solver_type = ceres::LinearSolverType::ITERATIVE_SCHUR;
     options.minimizer_progress_to_stdout = true;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);
     std::cout << summary.FullReport() << "\n";
+
+	//TODO : save to file and record time
+	ofstream outFile;
+	string str1 = "result";
+	string str2 = ".txt";
+
+	auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+	std::stringstream ss;
+	ss << std::put_time(std::localtime(&t), "%Y-%m-%d-%H-%M-%S");
+	std::string strtime = ss.str();
+
+	string outFilename = "./result/" + str1 + strtime + str2;
+	outFile.open(outFilename, ios::out | ios::ate);
+	outFile << summary.FullReport() << endl;
+	outFile.close();
 }

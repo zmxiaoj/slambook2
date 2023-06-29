@@ -50,6 +50,7 @@ int main(int argc, char **argv) {
             optimizer.addVertex(v);
             vertexCnt++;
             if (index == 0)
+	            // 将这个点的位置固定，不做优化
                 v->setFixed(true);
         } else if (name == "EDGE_SE3:QUAT") {
             // SE3-SE3 边
@@ -60,8 +61,10 @@ int main(int argc, char **argv) {
             e->setVertex(0, optimizer.vertices()[idx1]);
             e->setVertex(1, optimizer.vertices()[idx2]);
             e->read(fin);
+			//
             optimizer.addEdge(e);
         }
+	    // ifstream::good() 用于处理文件读取过程中的意外情况，正常读取返回1，否则返回0
         if (!fin.good()) break;
     }
 

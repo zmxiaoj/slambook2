@@ -1,6 +1,9 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 // #include "extra.h" // used in opencv2
+
+// opencv4
+#include "opencv2/imgcodecs/legacy/constants_c.h"
 using namespace std;
 using namespace cv;
 
@@ -173,7 +176,7 @@ void triangulation(
   Mat K = (Mat_<double>(3, 3) << 520.9, 0, 325.1, 0, 521.0, 249.7, 0, 0, 1);
   vector<Point2f> pts_1, pts_2;
   for (DMatch m:matches) {
-    // 将像素坐标转换至相机坐标
+    // 将像素坐标转换至(归一化)相机坐标
     pts_1.push_back(pixel2cam(keypoint_1[m.queryIdx].pt, K));
     pts_2.push_back(pixel2cam(keypoint_2[m.trainIdx].pt, K));
   }

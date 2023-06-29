@@ -52,6 +52,7 @@ public:
     /// camera参数的起始地址
     double *mutable_cameras() { return parameters_; }
 
+	/// point参数的起始地址
     double *mutable_points() { return parameters_ + camera_block_size() * num_cameras_; }
 
     double *mutable_camera_for_observation(int i) {

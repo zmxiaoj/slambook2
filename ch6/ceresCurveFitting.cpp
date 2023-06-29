@@ -68,9 +68,10 @@ int main(int argc, char **argv) {
   cout << "solve time cost = " << time_used.count() << " seconds. " << endl;
 
   // 输出结果
-  cout << summary.BriefReport() << endl;
+  cout << summary.FullReport() << endl;
   cout << "estimated a,b,c = ";
-  for (auto a:abc) cout << a << " ";
+  for (auto a:abc)
+	  cout << a << " ";
   cout << endl;
 
   return 0;

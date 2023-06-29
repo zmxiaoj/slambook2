@@ -1,0 +1,24 @@
+<!DOCTYPE MeshLabDocument>
+<MeshLabProject>
+ <MeshGroup>
+  <MLMesh visible="1" filename="initialCeres.ply" label="initialCeres.ply">
+   <MLMatrix44>
+1 0 0 0 
+0 1 0 0 
+0 0 1 0 
+0 0 0 1 
+</MLMatrix44>
+   <RenderingOption wireWidth="1" boxColor="234 234 234 255" pointSize="3" pointColor="0 0 0 255" solidColor="192 192 192 255" wireColor="64 64 64 255">000111010000000000000000000000000000000010100000000100111010110000001101</RenderingOption>
+  </MLMesh>
+  <MLMesh visible="1" filename="finalCeres.ply" label="finalCeres.ply">
+   <MLMatrix44>
+1 0 0 0 
+0 1 0 0 
+0 0 1 0 
+0 0 0 1 
+</MLMatrix44>
+   <RenderingOption wireWidth="1" boxColor="234 234 234 255" pointSize="8" pointColor="143 89 2 255" solidColor="192 192 192 255" wireColor="64 64 64 255">000111000000000000000000000000000000000010100000000100111010110100001101</RenderingOption>
+  </MLMesh>
+ </MeshGroup>
+ <RasterGroup/>
+</MeshLabProject>

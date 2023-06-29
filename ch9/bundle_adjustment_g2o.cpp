@@ -126,9 +126,9 @@ int main(int argc, char **argv) {
     BALProblem bal_problem(argv[1]);
     bal_problem.Normalize();
     bal_problem.Perturb(0.1, 0.5, 0.5);
-    bal_problem.WriteToPLYFile("initial.ply");
+    bal_problem.WriteToPLYFile("initialG2o.ply");
     SolveBA(bal_problem);
-    bal_problem.WriteToPLYFile("final.ply");
+    bal_problem.WriteToPLYFile("finalG2o.ply");
 
     return 0;
 }
@@ -168,6 +168,8 @@ void SolveBA(BALProblem &bal_problem) {
         v->setId(i + bal_problem.num_cameras());
         v->setEstimate(Vector3d(point[0], point[1], point[2]));
         // g2o在BA中需要手动设置待Marg的顶点
+		// 对路标点进行边缘化
+		// 对矩阵H中C块的边缘化
         v->setMarginalized(true);
         optimizer.addVertex(v);
         vertex_points.push_back(v);

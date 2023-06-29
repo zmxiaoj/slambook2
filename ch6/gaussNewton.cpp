@@ -10,8 +10,10 @@ using namespace Eigen;
 int main(int argc, char **argv) {
   double ar = 1.0, br = 2.0, cr = 1.0;         // 真实参数值
   double ae = 2.0, be = -1.0, ce = 5.0;        // 估计参数值
+  // double ae = 0.0, be = -0.0, ce = 0.0;
   int N = 100;                                 // 数据点
   double w_sigma = 1.0;                        // 噪声Sigma值
+  // double w_sigma = 0.1;
   double inv_sigma = 1.0 / w_sigma;
   cv::RNG rng;                                 // OpenCV随机数产生器
 

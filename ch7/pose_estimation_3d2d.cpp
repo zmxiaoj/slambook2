@@ -14,6 +14,9 @@
 #include <sophus/se3.hpp>
 #include <chrono>
 
+// opencv4
+#include "opencv2/imgcodecs/legacy/constants_c.h"
+
 using namespace std;
 using namespace cv;
 
@@ -69,6 +72,7 @@ int main(int argc, char **argv) {
     ushort d = d1.ptr<unsigned short>(int(keypoints_1[m.queryIdx].pt.y))[int(keypoints_1[m.queryIdx].pt.x)];
     if (d == 0)   // bad depth
       continue;
+	// 真实深度(m)
     float dd = d / 5000.0;
     Point2d p1 = pixel2cam(keypoints_1[m.queryIdx].pt, K);
     pts_3d.push_back(Point3f(p1.x * dd, p1.y * dd, dd));
@@ -98,6 +102,8 @@ int main(int argc, char **argv) {
 
   cout << "calling bundle adjustment by gauss newton" << endl;
   Sophus::SE3d pose_gn;
+  // 初始化为单位阵I_4
+  // cout << pose_gn.matrix() << endl;
   t1 = chrono::steady_clock::now();
   bundleAdjustmentGaussNewton(pts_3d_eigen, pts_2d_eigen, K, pose_gn);
   t2 = chrono::steady_clock::now();
@@ -211,6 +217,7 @@ void bundleAdjustmentGaussNewton(
         -fy * pc[0] * pc[1] * inv_z2,
         -fy * pc[0] * inv_z;
 
+
       H += J.transpose() * J;
       b += -J.transpose() * e;
     }
@@ -235,12 +242,12 @@ void bundleAdjustmentGaussNewton(
 
     cout << "iteration " << iter << " cost=" << std::setprecision(12) << cost << endl;
     if (dx.norm() < 1e-6) {
-      // converge
+      cout << "converge" << endl;
       break;
     }
   }
 
-  cout << "pose by g-n: \n" << pose.matrix() << endl;
+  cout << "pose by g-n: \n" <<pose.matrix() << endl;
 }
 
 /// vertex and edges used in g2o ba
@@ -269,18 +276,23 @@ public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
   EdgeProjection(const Eigen::Vector3d &pos, const Eigen::Matrix3d &K) : _pos3d(pos), _K(K) {}
-
+  // 计算误差
   virtual void computeError() override {
     const VertexPose *v = static_cast<VertexPose *> (_vertices[0]);
     Sophus::SE3d T = v->estimate();
+	// K*T*P_c
     Eigen::Vector3d pos_pixel = _K * (T * _pos3d);
+	// Z=1 深度归一化
     pos_pixel /= pos_pixel[2];
+	// 提取前2个元素
     _error = _measurement - pos_pixel.head<2>();
   }
-
+  // 计算雅克比
   virtual void linearizeOplus() override {
     const VertexPose *v = static_cast<VertexPose *> (_vertices[0]);
+	// 取出待估计量
     Sophus::SE3d T = v->estimate();
+	// 世界坐标转换到相机坐标
     Eigen::Vector3d pos_cam = T * _pos3d;
     double fx = _K(0, 0);
     double fy = _K(1, 1);
@@ -290,6 +302,7 @@ public:
     double Y = pos_cam[1];
     double Z = pos_cam[2];
     double Z2 = Z * Z;
+	// 计算 2*6 的雅可比矩阵
     _jacobianOplusXi
       << -fx / Z, 0, fx * X / Z2, fx * X * Y / Z2, -fx - fx * X * X / Z2, fx * Y / Z,
       0, -fy / Z, fy * Y / (Z * Z), fy + fy * Y * Y / Z2, -fy * X * Y / Z2, -fy * X / Z;
@@ -339,9 +352,13 @@ void bundleAdjustmentG2O(
     auto p2d = points_2d[i];
     auto p3d = points_3d[i];
     EdgeProjection *edge = new EdgeProjection(p3d, K_eigen);
+	// 设置边的id
     edge->setId(index);
+	// 连接顶点与边
     edge->setVertex(0, vertex_pose);
+	// 设置测量值
     edge->setMeasurement(p2d);
+	// 设置信息矩阵(协方差矩阵的逆)
     edge->setInformation(Eigen::Matrix2d::Identity());
     optimizer.addEdge(edge);
     index++;
@@ -356,4 +373,6 @@ void bundleAdjustmentG2O(
   cout << "optimization costs time: " << time_used.count() << " seconds." << endl;
   cout << "pose estimated by g2o =\n" << vertex_pose->estimate().matrix() << endl;
   pose = vertex_pose->estimate();
+  // 输出李代数形式
+  // cout << pose.log() << endl;
 }
