@@ -19,6 +19,7 @@ class VisualOdometry {
     typedef std::shared_ptr<VisualOdometry> Ptr;
 
     /// constructor with config file
+    // 构造函数，参数是配置文件路径
     VisualOdometry(std::string &config_path);
 
     /**

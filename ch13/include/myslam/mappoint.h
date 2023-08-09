@@ -29,11 +29,13 @@ struct MapPoint {
 
     MapPoint(long id, Vec3 position);
 
+	// get pose
     Vec3 Pos() {
         std::unique_lock<std::mutex> lck(data_mutex_);
         return pos_;
     }
 
+	// set pose
     void SetPos(const Vec3 &pos) {
         std::unique_lock<std::mutex> lck(data_mutex_);
         pos_ = pos;

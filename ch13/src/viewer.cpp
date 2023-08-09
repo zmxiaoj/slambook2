@@ -8,6 +8,9 @@
 #include <pangolin/pangolin.h>
 #include <opencv2/opencv.hpp>
 
+// for opencv4
+#include <opencv2/imgproc/types_c.h>
+
 namespace myslam {
 
 Viewer::Viewer() {

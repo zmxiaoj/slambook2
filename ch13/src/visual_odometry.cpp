@@ -21,6 +21,7 @@ bool VisualOdometry::Init() {
     CHECK_EQ(dataset_->Init(), true);
 
     // create components and links
+	// 创建各个模块，并构建它们之间的联系或依赖关系
     frontend_ = Frontend::Ptr(new Frontend);
     backend_ = Backend::Ptr(new Backend);
     map_ = Map::Ptr(new Map);

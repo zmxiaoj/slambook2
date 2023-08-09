@@ -31,10 +31,10 @@ class Backend {
         cam_right_ = right;
     }
 
-    /// 设置地图
+    /// 设置地图，让backend自己的地图指针指向当前的地图，而不是对当前地图进行修改，不需要锁
     void SetMap(std::shared_ptr<Map> map) { map_ = map; }
 
-    /// 触发地图更新，启动优化
+    /// 触发地图更新，启动优化(notify)
     void UpdateMap();
 
     /// 关闭后端线程
@@ -50,8 +50,10 @@ class Backend {
     std::shared_ptr<Map> map_;
     std::thread backend_thread_;
     std::mutex data_mutex_;
-
+    // 条件变量
     std::condition_variable map_update_;
+    // std::atomic 是模板类，一个模板类型为 T 的原子对象中封装了一个类型为 T 的值
+    // 原子类型对象不同线程同时访问不会产生数据竞争
     std::atomic<bool> backend_running_;
 
     Camera::Ptr cam_left_ = nullptr, cam_right_ = nullptr;

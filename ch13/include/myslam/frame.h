@@ -19,6 +19,7 @@ struct Feature;
 struct Frame {
    public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+
     typedef std::shared_ptr<Frame> Ptr;
 
     unsigned long id_ = 0;           // id of this frame
@@ -41,11 +42,12 @@ struct Frame {
           const Mat &right);
 
     // set and get pose, thread safe
+	// get pose
     SE3 Pose() {
         std::unique_lock<std::mutex> lck(pose_mutex_);
         return pose_;
     }
-
+	// set pose
     void SetPose(const SE3 &pose) {
         std::unique_lock<std::mutex> lck(pose_mutex_);
         pose_ = pose;
